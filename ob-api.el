@@ -124,6 +124,15 @@
     (max-time . :any))
   "http header arguments")
 
+(defvar org-babel-default-header-args:api
+  `((:results . "raw")
+    (:pretty . "yes")
+    (:host . "localhost")
+    (:port . 80)
+    (:scheme . "http"))
+  "Default arguments for evaluating a restclient block.")
+
+
 (defgroup ob-api nil
   "org-mode blocks for http request"
   :group 'org)
@@ -276,7 +285,27 @@
     (with-temp-file filename
       (insert body))))
 
-(defun org-babel-execute:api (body params)
+(defun ob-api-manipulate-args (args)
+  "table parameters will be manipulated."
+  (let* ((ret '()))
+         (dolist (el args)
+           (cond
+            ((and (eq (car el) :var) (< 2 (safe-length (cdr el))))
+             (let* ((l (cdr (cdr (cdr el)))))
+               (dolist (el l)
+                 (let* ((key (intern (car el)))
+                        (val (nth 1 el))
+                        (desc (nth 2 el))
+                        )
+                   (unless (eq key '##)
+                     (push (append '(:var) (cons key val)) ret)
+                     (push (append '(:desc) (cons key desc)) ret))))))
+            (t (push el ret))))
+         ret
+         ))
+
+(defun org-babel-execute:api (body args)
+  (let* ((params (ob-api-manipulate-args args)))
   (let* ((request (ob-api-parse-request (org-babel-expand-body:api body params)))
          (proxy (cdr (assoc :proxy params)))
          (noproxy (assoc :noproxy params))
@@ -328,14 +357,14 @@
             (when ob-api:remove-cr (ob-api-remove-carriage-return response))
             (cond (get-header (ob-api-get-response-header response get-header))
                   (select (ob-api-select response select))
-                  (prettify (ob-api-response-body response))
+                  (prettify (format "#+BEGIN_SRC js :exports none\n%s#+END_SRC" (ob-api-response-body response)))
                   (file (ob-api-file response (cdr file)))
                   (t (s-join "\n\n" (list (ob-api-response-headers response) (ob-api-response-body response))))))
         (with-output-to-temp-buffer "*curl error*"
           (princ (with-temp-buffer
                    (insert-file-contents-literally error-output)
                    (s-join "\n" (s-lines (buffer-string)))))
-          "")))))
+          ""))))))
 
 (defun ob-api-export-expand-variables (&optional backend)
   "Scan current buffer for all HTTP source code blocks and expand variables.
