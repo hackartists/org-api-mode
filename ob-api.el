@@ -304,6 +304,38 @@
          ret
          ))
 
+(defun ob-api-pretty-result (request response args body params)
+  "returns result string"
+  (let* ((req (ob-api-parse-request body)))
+    (concat
+     "- URL Scheme\n"
+     "  | Method | URL |\n"
+     "  |--------+-----|\n"
+     "  " (format "| %s | %s |\n" (ob-api-request-method req) (ob-api-request-url req))
+     "\n"
+     "- Request Body\n"
+     "  #+BEGIN_SRC json\n"
+     "  " (format "%s" (ob-api-request-body req))
+     "  #+END_SRC\n"
+     "\n"
+     "- Example\n"
+     "  - Command\n"
+     "    " (format "curl %s\n" (string-join (mapcar 'shell-quote-argument (ob-api-flatten args))))
+     "\n"
+     "  - Request\n"
+     "    #+BEGIN_SRC json\n"
+     "    " (format "%s %s\n" (ob-api-request-method request) (ob-api-request-url request))
+     "    \n"
+     "    " (format "%s" (ob-api-request-body request))
+     "    #+END_SRC\n"
+     "\n"
+     "  - Response\n"
+     "    #+BEGIN_SRC json\n"
+     "    " (format "%s" (ob-api-response-body response))
+     "    #+END_SRC\n")
+    )
+  )
+
 (defun org-babel-execute:api (body args)
   (let* ((params (ob-api-manipulate-args args)))
   (let* ((request (ob-api-parse-request (org-babel-expand-body:api body params)))
@@ -357,7 +389,7 @@
             (when ob-api:remove-cr (ob-api-remove-carriage-return response))
             (cond (get-header (ob-api-get-response-header response get-header))
                   (select (ob-api-select response select))
-                  (prettify (format "#+BEGIN_SRC js :exports none\n%s#+END_SRC" (ob-api-response-body response)))
+                  (prettify (ob-api-pretty-result request response args body params))
                   (file (ob-api-file response (cdr file)))
                   (t (s-join "\n\n" (list (ob-api-response-headers response) (ob-api-response-body response))))))
         (with-output-to-temp-buffer "*curl error*"
