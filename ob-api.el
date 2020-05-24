@@ -310,7 +310,7 @@
 
 (defun ob-api-body-descriptor:json (body params)
   "returns description string of request body and description"
-  (let* ((ret '("  | Name | Type | Description |" "  |--+--+--|"))
+  (let* ((ret '())
          (vars (mapcar (lambda (x) (when (eq (car x) :var) (cdr x))) params))
          (descs (mapcar (lambda (x) (when (eq (car x) :desc) (cdr x))) params))
          )
@@ -332,17 +332,20 @@
 
 (defun ob-api-pretty-result (request response args body params)
   "returns result string"
-  (let* ((req (ob-api-parse-request body)))
+  (let* ((req (ob-api-parse-request body))
+         (pdescs (ob-api-body-descriptor:json body params)))
     (concat
      "- Request URL\n"
      "  " (format "| URL | %s  |\n" (ob-api-request-url req))
      "  " (format "| Method | %s |\n" (ob-api-request-method req))
      (ob-api-headers-to-table (ob-api-request-headers request) "  ")
      "\n"
-     (when (ob-api-request-body request)
+     (when (not (equal "" pdescs))
        (concat
         "- Parameters\n"
-        (ob-api-body-descriptor:json body params) "\n"
+        "  | Name | Type | Description |\n"
+        "  |--+--+--|\n"
+        pdescs "\n"
         "\n"
         ))
      "- Example\n"
