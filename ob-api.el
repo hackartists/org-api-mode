@@ -369,50 +369,6 @@
        (format "%s"  (ob-api-pretty-json (ob-api-response-body response))))
      "    #+END_SRC\n")))
 
-(defun ob-api-pretty-result (request response args body params)
-  "returns result string"
-  (let* ((req (ob-api-parse-request body))
-         (bodyjson (when (ob-api-request-body req)
-                     (json-read-from-string (ob-api-request-body req)))))
-    (concat
-     "- Request URL\n"
-     "  " (format "| URL | %s  |\n" (ob-api-request-url req))
-     "  " (format "| Method | %s |\n" (ob-api-request-method req))
-     (ob-api-headers-to-table (ob-api-request-headers req) "  ")
-     "\n"
-     (when (ob-api-request-body req)
-       (concat
-        "- Request Body\n"
-        "  #+BEGIN_SRC json\n"
-        (format "%s" (ob-api-pretty-json (ob-api-request-body req)))
-        "  #+END_SRC\n"
-        "\n"
-        ))
-     "- Example\n"
-     "  - Command\n"
-     "    #+BEGIN_SRC shell\n"
-     (format "curl %s\n" (string-join (mapcar 'shell-quote-argument (ob-api-flatten args)) " "))
-     "    #+END_SRC\n"
-     "\n"
-     "  - Request\n"
-     "    #+BEGIN_SRC js\n"
-     (format "// %s %s\n" (ob-api-request-method request) (ob-api-request-url request))
-     (when (ob-api-request-headers request)
-       (format "// %s\n" (string-join (ob-api-request-headers request) "\n// ")))
-     (when (ob-api-request-body request)
-       "\n"
-       (format "%s" (ob-api-pretty-json (ob-api-request-body request))))
-     "    #+END_SRC\n"
-     "\n"
-     "  - Response\n"
-     (when (ob-api-response-body response)
-       (concat
-        "    #+BEGIN_SRC js\n"
-        (format "// %s \n" (s-replace "" "" (s-replace "\n" "\n// " (ob-api-response-headers response))))
-        "\n"
-        (format "%s"  (ob-api-pretty-json (ob-api-response-body response)))
-        "    #+END_SRC\n")))))
-
 (defun org-babel-execute:api (body args)
   (let* ((params (ob-api-manipulate-args args)))
   (let* ((request (ob-api-parse-request (org-babel-expand-body:api body params)))
