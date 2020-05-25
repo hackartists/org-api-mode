@@ -129,7 +129,8 @@
     (:pretty . "yes")
     (:host . "localhost")
     (:port . 80)
-    (:scheme . "http"))
+    (:scheme . "http")
+    (:exports . "both"))
   "Default arguments for evaluating a restclient block.")
 
 
@@ -336,6 +337,8 @@
          (pdescs (ob-api-body-descriptor:json body params)))
     (concat
      "- Request URL\n"
+     "  | Type | Description |\n"
+     "  |------+-------------|\n"
      "  " (format "| URL | %s  |\n" (ob-api-request-url req))
      "  " (format "| Method | %s |\n" (ob-api-request-method req))
      (ob-api-headers-to-table (ob-api-request-headers request) "  ")
