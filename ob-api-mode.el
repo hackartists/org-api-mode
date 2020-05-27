@@ -1,6 +1,8 @@
-;;; ob-http-mode.el --- syntax highlight for ob-http
+;;; ob-api-mode.el --- syntax highlight for ob-api
 
 ;; Copyright (C) 2020 Jongseok Choi
+;;
+;; This code has been derived from ob-http-mode.el
 
 (require 's)
 
