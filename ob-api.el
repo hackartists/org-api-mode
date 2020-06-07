@@ -265,7 +265,7 @@
         ))
      "- Example\n"
      "  - Command\n"
-     "    #+BEGIN_SRC shell\n"
+     "    #+BEGIN_SRC sh\n"
      (format "curl %s\n" (string-join (mapcar 'shell-quote-argument (ob-api-flatten args)) " "))
      "    #+END_SRC\n"
      "\n"
