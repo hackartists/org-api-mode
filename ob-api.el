@@ -38,6 +38,7 @@
     (:exports . "both"))
   "Default arguments for evaluating a restclient block.")
 
+(defvar org-babel-deps-handle:api nil "Indicate deps handle")
 
 (defgroup ob-api nil
   "org-mode blocks for http request"
@@ -154,8 +155,10 @@
      (t body))))
 
 (defun org-babel-expand-body:api (body params)
-  (s-format body 'ob-api-aget
-            (mapcar (lambda (x) (when (eq (car x) :var) (cdr x))) params)))
+  (let* ((ret (s-format body 'ob-api-aget
+                        (mapcar (lambda (x) (when (eq (car x) :var) (cdr x))) params)))
+         (rem (s-count-matches "\\$\\({\\([^}]+\\)}\\|[0-9]+\\)" ret)))
+    (if (> rem 0) (org-babel-expand-body:api ret params) ret)))
 
 (defun ob-api-get-response-header (response header)
   (cdr (assoc (s-downcase header) (ob-api-response-headers-map response))))
@@ -206,14 +209,28 @@
                    (unless (eq key '##)
                      (push (append '(:var) (cons key val)) ret)
                      (push (append '(:desc) (cons key desc)) ret))))))
+            ((eq (car el) :desc)
+             (let* ((desc (s-split "\" "  (cdr el))))
+               (dolist (el desc)
+                 (let* ((d (s-split "=" (replace-regexp-in-string "\"" "" el ))))
+                   (push (append '(:desc) (cons (intern (nth 0 d)) (nth 1 d))) ret)))))
             ((eq (car el) :optional)
              (let* ((opts (s-split " " (cdr el))))
                (dolist (el opts)
-                 (push (append '(:optional) (cons (intern el) "")) ret)
-                 )))
+                 (push (append '(:optional) (cons (intern el) "")) ret))))
+            ((eq (car el) :deps)
+             (let* ((deps (s-split " " (cdr el)))
+                    (old org-babel-deps-handle:api))
+               (setq org-babel-deps-handle:api t)
+               (condition-case nil
+                   (dolist (el deps)
+                     (let* ((k (intern (nth 0(s-split "=" el))))
+                            (v (org-babel-ref-parse el)))
+                       (push (append '(:var) (cons k v)) ret)))
+                 (error nil))
+               (setq org-babel-deps-handle:api old)))
             (t (push el ret))))
-         ret
-         ))
+         ret))
 
 (defun ob-api-headers-to-table (headers spaces)
   "returns table string"
@@ -284,7 +301,7 @@
        (format "// %s \n" (s-replace "" "" (s-replace "\n" "\n// " (ob-api-response-headers response)))))
      "\n"
      (when (ob-api-response-body response)
-       (format "%s"  (ob-api-pretty-json (ob-api-response-body response))))
+       (format "%s\n"  (ob-api-pretty-response response "yes")))
      "    #+END_SRC\n")))
 
 (defun org-babel-execute:api (body args)
@@ -338,6 +355,7 @@
             (when ob-api:remove-cr (ob-api-remove-carriage-return response))
             (cond (get-header (ob-api-get-response-header response get-header))
                   (select (ob-api-select response select))
+                  (org-babel-deps-handle:api response)
                   (prettify (ob-api-pretty-result request response args body params))
                   (file (ob-api-file response (cdr file)))
                   (t (s-join "\n\n" (list (ob-api-response-headers response) (ob-api-response-body response))))))
