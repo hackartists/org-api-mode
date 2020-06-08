@@ -196,7 +196,8 @@
 
 (defun ob-api-manipulate-args (args)
   "table parameters will be manipulated."
-  (let* ((ret '()))
+  (let* ((ret '())
+         (dval '()))
     (dolist (el args)
            (cond
             ((and (eq (car el) :var) (< 2 (safe-length (cdr el))))
@@ -223,12 +224,18 @@
                     (old org-babel-deps-handle:api))
                (setq org-babel-deps-handle:api t)
                (condition-case nil
-                   (dolist (el deps)
-                     (let* ((k (intern (nth 0(s-split "=" el))))
-                            (v (org-babel-ref-parse el)))
-                       (push (append '(:var) (cons k v)) ret)))
+                   (dolist (el deps) (push (org-babel-ref-parse el) dval))
                  (error nil))
                (setq org-babel-deps-handle:api old)))
+            ((eq (car el) :eval)
+             (let* ((evals (s-split " " (cdr el))))
+               (dolist (el evals)
+                 (let* ((es (s-split "=" el))
+                        (vn (intern (nth 0 es)))
+                        (de (s-split "#" (nth 1 es)))
+                        (resp (cdr (assoc (intern (nth 0 de)) dval)))
+                        (v (s-replace "\n" ""  (ob-api-select resp (nth 1 de)))))
+                   (push (append '(:var) (cons vn v)) ret)))))
             (t (push el ret))))
          ret))
 
