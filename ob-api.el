@@ -197,7 +197,8 @@
 (defun ob-api-manipulate-args (args)
   "table parameters will be manipulated."
   (let* ((ret '())
-         (dval '()))
+         (dval '())
+         (delay 0))
     (dolist (el args)
            (cond
             ((and (eq (car el) :var) (< 2 (safe-length (cdr el))))
@@ -236,12 +237,15 @@
                         (resp (cdr (assoc (intern (nth 0 de)) dval)))
                         (v (s-replace "\n" ""  (ob-api-select resp (nth 1 de)))))
                    (push (append '(:var) (cons vn v)) ret)))))
+            ((eq (car el) :delay)
+             (set 'delay (cdr el)))
             (t (push el ret))))
-         ret))
+    (sleep-for delay)
+    ret))
 
 (defun ob-api-headers-to-table (headers spaces)
   "returns table string"
-  (string-join (mapcar (lambda (x)  (format "%s| %s |\n" spaces (s-replace ":" " | " x))) headers)))
+  (string-join (mapcar (lambda (x)  (format "%s| %s |\n" spaces (s-join "|" (s-split-up-to ":" x 1)))) headers)))
 
 (defun ob-api-body-descriptor:json (body params)
   "returns description string of request body and description"
