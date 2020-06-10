@@ -17,9 +17,7 @@
     (noproxy . :any)
     (curl . :any)
     (cookie . :any)
-    (schema . :any)
-    (host . :any)
-    (port . :any)
+    (baseurl . :any)
     (user . :any)
     (username . :any)  ;; deprecated, use user instead
     (password . :any)  ;; deprecated
@@ -32,9 +30,6 @@
 (defvar org-babel-default-header-args:api
   `((:results . "raw")
     (:pretty . "yes")
-    (:host . "localhost")
-    (:port . 80)
-    (:scheme . "http")
     (:exports . "both"))
   "Default arguments for evaluating a restclient block.")
 
@@ -181,11 +176,7 @@
 (defun ob-api-construct-url (path params)
   (if (s-starts-with? "/" path)
       (s-concat
-       (format "%s://" (or (assoc-default :schema params) "http"))
-       (assoc-default :host params)
-       (when (assoc :port params)
-             (format ":%s" (assoc-default :port params)))
-       (assoc-default :path-prefix params)
+       (org-babel-expand-body:api (format "%s" (or (assoc-default :baseurl params) "http://localhost:8080")) params) 
        path)
     path))
 
