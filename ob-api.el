@@ -289,7 +289,8 @@
           ((numberp val) (list (cons key "number")))
           ((booleanp val)  (list (cons key "boolean")))
           ((listp val) (append (list (cons key "object")) (json-extractor-type val key)))
-          (t (cons key "unknown")))))))
+          ((arrayp val) (list (cons key "array")))
+          (t (list (cons key "unknown"))))))))
     ret))
 
 (defun ob-api-pretty-result (request response args body params)
