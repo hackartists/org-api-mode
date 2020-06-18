@@ -251,13 +251,13 @@
        (let* ((name (substring md 2 -1))
               (desc (cdr (assoc (intern name) descs)))
               (val (cdr (assoc (intern name) vars)))
-              (required (if (assoc (intern name) opts) "optional" "required"))
+              (required (if (assoc (intern name) opts) "No" "Yes"))
               (type (cond
                      ((numberp val) "number")
                      ((booleanp val) "boolean")
                      ((stringp val) "string")
                      (t "object"))))
-         (add-to-list 'ret (format "  | %s | %s | %s | %s |" name type required desc) t)
+         (add-to-list 'ret (format "  | %s | %s | %s | %s |" name desc required type) t)
          md))
      body)
     (string-join ret "\n")))
@@ -278,49 +278,87 @@
                     (format "-d '%s'" (s-replace "\n" " " body)))
                   "\n") " ")))
 
+(defun json-extractor-type (jsonobj &optional basename)
+  (let* ((ret (list)))
+    (dolist (x jsonobj)
+      (let* ((val (cdr x))
+             (key (if basename (format "%s.%s" basename (car x)) (car x))))
+        (setq ret (append ret 
+         (cond
+          ((stringp val) (list (cons key "string")))
+          ((numberp val) (list (cons key "number")))
+          ((booleanp val)  (list (cons key "boolean")))
+          ((listp val) (append (list (cons key "object")) (json-extractor-type val key)))
+          (t (cons key "unknown")))))))
+    ret))
+
 (defun ob-api-pretty-result (request response args body params)
   "returns result string"
   (let* ((req (ob-api-parse-request body))
-         (pdescs (ob-api-body-descriptor:json body params)))
+         (headers-body (ob-api-split-header-body body))
+         (headers (s-split-up-to "\\(\r\n\\|[\n\r]\\)" (car headers-body) 1))
+         (url (cadr (split-string (car headers) " ")))
+         (sbody (cadr headers-body))
+         (hdr (cadr headers))
+         (udescs (ob-api-body-descriptor:json url params))
+         (hdescs (when hdr (ob-api-body-descriptor:json hdr params)))
+         (bdescs (when sbody (ob-api-body-descriptor:json sbody params))))
     (concat
-     "- Request URL\n"
-     "  | Type | Description |\n"
-     "  |------+-------------|\n"
-     "  " (format "| URL | %s  |\n" (ob-api-request-url req))
-     "  " (format "| Method | %s |\n" (ob-api-request-method req))
-     (ob-api-headers-to-table (ob-api-request-headers request) "  ")
-     "\n"
-     (when (not (equal "" pdescs))
+     (when hdescs
        (concat
-        "- Parameters\n"
-        "  | Name | Type | Required | Description |\n"
-        "  |------+------+----------+-------------|\n"
-        pdescs "\n"
-        "\n"
-        ))
-     "- Example\n"
-     "  - Command\n"
-     "    #+BEGIN_SRC sh\n"
+        "+ *Request Headers*\n"
+        "  | Name | Description | Required | Type |\n"
+        "  |------+-------------+----------+------|\n"
+        hdescs " \n"
+        " \n"))
+     (when (not (equal "" udescs))
+       (concat
+        "+ *Path Parameters*\n"
+        "  | Name | Description | Required | Type |\n"
+        "  |------+-------------+----------+------|\n"
+        udescs " \n"
+        "  \n"))
+     (when bdescs
+       (concat
+        "+ *Body Parameters*\n"
+        "  | Name | Description | Required | Type |\n"
+        "  |------+-------------+----------+------|\n"
+        bdescs "  \n"
+        "  \n"))
+     "+ *Example*\n"
+     "  + Command\n"
+     "  #+BEGIN_SRC sh\n"
      (composite-curl-command request params)
-     "    #+END_SRC\n"
-     "\n"
-     "  - Request\n"
-     "    #+BEGIN_SRC js\n"
+     "  #+END_SRC\n"
+     " \n"
+     "  + Request\n"
+     "  #+BEGIN_SRC js\n"
      (format "// %s %s\n" (ob-api-request-method request) (ob-api-request-url request))
      (when (ob-api-request-headers request)
        (format "// %s\n" (string-join (ob-api-request-headers request) "\n// ")))
      (when (ob-api-request-body request)
        (format "\n%s" (ob-api-pretty-json (ob-api-request-body request))))
-     "    #+END_SRC\n"
-     "\n"
-     "  - Response\n"
-     "    #+BEGIN_SRC js\n"
+     "  #+END_SRC\n"
+     " \n"
+     "  + Response\n"
+     (let* ((ht (s-split-up-to " " (car (s-split-up-to "\n" (s-replace "" "" (ob-api-response-headers response)) 1)) 2)))
+       (format  "    /*%s*/ - %s\n" (nth 1 ht) (nth 2 ht)))
+     "    | Name | Type |\n"
+     "    |------+------|\n"
+     (let* ((j (json-read-from-string (ob-api-response-body response))))
+       (format "%s"  (string-join
+                      (mapcar
+                       (lambda (x)
+                         (format "    | %s | %s |" (car x) (cdr x))
+                         ) (json-extractor-type j)) "\n")))
+     "\n\n"
+     "  #+BEGIN_SRC js\n"
      (when (ob-api-response-headers response)
        (format "// %s \n" (s-replace "" "" (s-replace "\n" "\n// " (ob-api-response-headers response)))))
-     "\n"
+     " \n"
      (when (ob-api-response-body response)
        (format "%s\n"  (ob-api-pretty-response response "yes")))
-     "    #+END_SRC\n")))
+     "  #+END_SRC\n")))
 
 (defun org-babel-append-header-to-body (body params)
   (let* ((headers (org-babel-ref-resolve (cdr (assoc :headers params))))
