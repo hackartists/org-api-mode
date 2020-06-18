@@ -300,6 +300,8 @@
          (url (cadr (split-string (car headers) " ")))
          (sbody (cadr headers-body))
          (hdr (cadr headers))
+         (resp-body (ob-api-response-body response))
+         (rbody (when (and resp-body (not (equal resp-body ""))) resp-body))
          (udescs (ob-api-body-descriptor:json url params))
          (hdescs (when hdr (ob-api-body-descriptor:json hdr params)))
          (bdescs (when sbody (ob-api-body-descriptor:json sbody params))))
@@ -343,21 +345,22 @@
      "  + Response\n"
      (let* ((ht (s-split-up-to " " (car (s-split-up-to "\n" (s-replace "" "" (ob-api-response-headers response)) 1)) 2)))
        (format  "    /*%s*/ - %s\n" (nth 1 ht) (nth 2 ht)))
-     "    | Name | Type |\n"
-     "    |------+------|\n"
-     (let* ((j (json-read-from-string (ob-api-response-body response))))
-       (format "%s"  (string-join
-                      (mapcar
-                       (lambda (x)
-                         (format "    | %s | %s |" (car x) (cdr x))
-                         ) (json-extractor-type j)) "\n")))
-     "\n\n"
+     (when rbody
+       "    | Name | Type |\n"
+       "    |------+------|\n"
+       (let* ((j (json-read-from-string rbody)))
+         (format "%s\n"  (string-join
+                        (mapcar
+                         (lambda (x)
+                           (format "    | %s | %s |" (car x) (cdr x))
+                           ) (json-extractor-type j)) "\n"))))
+     "\n"
      "  #+BEGIN_SRC js\n"
      (when (ob-api-response-headers response)
        (format "// %s \n" (s-replace "" "" (s-replace "\n" "\n// " (ob-api-response-headers response)))))
      " \n"
-     (when (ob-api-response-body response)
-       (format "%s\n"  (ob-api-pretty-response response "yes")))
+     (when rbody
+       (format "%s"  (ob-api-pretty-response response "yes")))
      "  #+END_SRC\n")))
 
 (defun org-babel-append-header-to-body (body params)
