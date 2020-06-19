@@ -344,9 +344,11 @@
      "  #+END_SRC\n"
      " \n"
      "  + Response\n"
+     "\n"
      (let* ((ht (s-split-up-to " " (car (s-split-up-to "\n" (s-replace "" "" (ob-api-response-headers response)) 1)) 2)))
        (format  "    /*%s*/ - %s\n" (nth 1 ht) (nth 2 ht)))
      (when rbody
+       (concat 
        "    | Name | Type |\n"
        "    |------+------|\n"
        (let* ((j (json-read-from-string rbody)))
@@ -354,7 +356,7 @@
                         (mapcar
                          (lambda (x)
                            (format "    | %s | %s |" (car x) (cdr x))
-                           ) (json-extractor-type j)) "\n"))))
+                           ) (json-extractor-type j)) "\n")))))
      "\n"
      "  #+BEGIN_SRC js\n"
      (when (ob-api-response-headers response)
