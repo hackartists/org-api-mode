@@ -330,21 +330,21 @@
         "  \n"))
      "+ *Example*\n"
      "  + Command\n"
-     "  #+BEGIN_SRC sh\n"
+     "    #+BEGIN_SRC sh\n"
      (composite-curl-command request params)
-     "  #+END_SRC\n"
+     "    #+END_SRC\n"
      " \n"
      "  + Request\n"
-     "  #+BEGIN_SRC js\n"
+     "    #+BEGIN_SRC js\n"
      (format "// %s %s\n" (ob-api-request-method request) (ob-api-request-url request))
      (when (ob-api-request-headers request)
        (format "// %s\n" (string-join (ob-api-request-headers request) "\n// ")))
      (when (ob-api-request-body request)
        (format "\n%s" (ob-api-pretty-json (ob-api-request-body request))))
-     "  #+END_SRC\n"
+     "    #+END_SRC\n"
      " \n"
      "  + Response\n"
-     "\n"
+     "\n" 
      (let* ((ht (s-split-up-to " " (car (s-split-up-to "\n" (s-replace "" "" (ob-api-response-headers response)) 1)) 2)))
        (format  "    /*%s*/ - %s\n" (nth 1 ht) (nth 2 ht)))
      (when rbody
@@ -358,13 +358,13 @@
                            (format "    | %s | %s |" (car x) (cdr x))
                            ) (json-extractor-type j)) "\n")))))
      "\n"
-     "  #+BEGIN_SRC js\n"
+     "    #+BEGIN_SRC js\n"
      (when (ob-api-response-headers response)
        (format "// %s \n" (s-replace "" "" (s-replace "\n" "\n// " (ob-api-response-headers response)))))
      " \n"
      (when rbody
        (format "%s"  (ob-api-pretty-response response "yes")))
-     "  #+END_SRC\n")))
+     "    #+END_SRC\n")))
 
 (defun org-babel-append-header-to-body (body params)
   (let* ((headers (org-babel-ref-resolve (cdr (assoc :headers params))))
