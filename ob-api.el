@@ -307,21 +307,21 @@
          (hdescs (when hdr (ob-api-body-descriptor:json hdr params)))
          (bdescs (when sbody (ob-api-body-descriptor:json sbody params))))
     (concat
-     (when hdescs
+     (when (and hdescs (not (equal "" hdescs)))
        (concat
         "+ *Request Headers*\n"
         "  | Name | Description | Required | Type |\n"
         "  |------+-------------+----------+------|\n"
         hdescs " \n"
         " \n"))
-     (when (not (equal "" udescs))
+     (when (and udescs (not (equal "" udescs)))
        (concat
         "+ *Path Parameters*\n"
         "  | Name | Description | Required | Type |\n"
         "  |------+-------------+----------+------|\n"
         udescs " \n"
         "  \n"))
-     (when bdescs
+     (when (and bdescs (not (equal "" bdescs)))
        (concat
         "+ *Body Parameters*\n"
         "  | Name | Description | Required | Type |\n"
