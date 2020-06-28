@@ -140,14 +140,14 @@
   (let ((content-type (ob-api-parse-content-type
                        (ob-api-get-response-header response "content-type")))
         (body (ob-api-response-body response)))
-    (cond
+    (s-replace "\n" "" (cond
      ((and (eq 'json content-type) (executable-find "jq"))
       (ob-api-shell-command-to-string (format "jq -r \"%s\"" path) body))
      ((and (eq 'html content-type) (executable-find "pup"))
       (ob-api-shell-command-to-string (format "pup -p \"%s\"" path) body))
      ((and (eq 'xml content-type) (executable-find "xmlstarlet"))
       (ob-api-shell-command-to-string (format "xmlstarlet sel -t -c '%s' | xmlstarlet fo -o" path) body))
-     (t body))))
+     (t body)))))
 
 (defun org-babel-expand-body:api (body params)
   (let* ((ret (s-format body 'ob-api-aget
