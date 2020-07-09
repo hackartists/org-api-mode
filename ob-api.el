@@ -336,6 +336,7 @@
      " \n"
      "  + Request\n"
      "    #+BEGIN_SRC js\n"
+     (format "// URL %s\n" (org-babel-expand-body:api (format "%s" (or (assoc-default :baseurl params) "http://localhost:8080")) params))
      (format "// %s %s\n" (ob-api-request-method request) (ob-api-request-url request))
      (when (ob-api-request-headers request)
        (format "// %s\n" (string-join (ob-api-request-headers request) "\n// ")))
