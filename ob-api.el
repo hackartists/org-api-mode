@@ -359,7 +359,7 @@
      ;;                       (format "    | %s | %s |" (car x) (cdr x))
      ;;                       ) (json-extractor-type j)) "\n")))))
      ;; "\n"
-     "    #+BEGIN_SRC js\n"
+     "#+BEGIN_SRC js\n"
      "// "
      (composite-curl-command request params)
      (when (ob-api-response-headers response)
@@ -367,7 +367,7 @@
      " \n"
      (when rbody
        (format "%s"  (ob-api-pretty-response response "yes")))
-     "    #+END_SRC\n")))
+     "\n#+END_SRC\n")))
 
 (defun org-babel-append-header-to-body (body params)
   (let* ((headers (org-babel-ref-resolve (cdr (assoc :headers params))))
